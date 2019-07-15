@@ -1,5 +1,11 @@
 from ..database import db
 
+class PredictorCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.String, nullable=False)
+    predictor_id = db.Column(db.Integer, db.ForeignKey('predictor.id'),
+                             nullable=False, index=True)
+
 
 class Predictor(db.Model):
     """ Instantiation of a predictor in a dataset.

@@ -17,7 +17,7 @@ from .utils import hash_stim
 from ..utils.db import get_or_create
 from ..models import (Dataset, Task, Run, Predictor, PredictorEvent,
                      PredictorRun, Stimulus, RunStimulus,
-                     GroupPredictor, GroupPredictorValue)
+                     GroupPredictor, GroupPredictorValue, PredictorCategory)
 from ..database import db
 from progressbar import progressbar
 from .annotate import PredictorSerializer
@@ -34,7 +34,10 @@ def add_predictor_collection(collection, dataset_id, run_id,
         include - list of predictors to include. all if None.
     """
     pe_objects = []
+    pc_objects = []
+
     for var in collection.variables.values():
+
         annotated = PredictorSerializer(
             TR=TR, include=include, exclude=exclude).load(var)
         if annotated is not None:
@@ -42,13 +45,24 @@ def add_predictor_collection(collection, dataset_id, run_id,
             predictor, _ = get_or_create(
                 Predictor, dataset_id=dataset_id, **pred_props)
             for pe in pes_props:
-                pe_objects.append(PredictorEvent(
-                               predictor_id=predictor.id, run_id=run_id, **pe))
+                '''
+                pe_objects.append(
+                    PredictorEvent(predictor_id=predictor.id, run_id=run_id, **pe)
+                )
+                '''
             # Add PredictorRun
             pr, _ = get_or_create(
-                PredictorRun, predictor_id=predictor.id, run_id=run_id)
+               PredictorRun, predictor_id=predictor.id, run_id=run_id)
+
+            unique = set([x for x in var.values])
+            make_category = all([isinstance(x, str) for x in unique])
+            for elem in unique:
+                get_or_create(
+                    PredictorCategory, predictor_id=predictor.id, value=elem
+                )
 
     db.session.bulk_save_objects(pe_objects)
+    # db.session.bulk_save_objects(pc_objects)
     db.session.commit()
 
 
@@ -166,15 +180,15 @@ def add_task(task_name, dataset_name=None, local_path=None,
 
     if new_ds:
         dataset_model.description = layout.description
-        dataset_model.summary = dataset_summary,
-        dataset_model.url = url,
+        dataset_model.summary = dataset_summary
+        dataset_model.url = url
         dataset_model.dataset_address = dataset_address
         dataset_model.preproc_address = preproc_address
         dataset_model.local_path = local_path.as_posix()
         db.session.commit()
     elif not reingest:
         print("Dataset found, skipping ingestion...")
-        return dataset_model.id
+        # return dataset_model.id
 
     # Get or create task
     task_model, new_task = get_or_create(
@@ -183,15 +197,19 @@ def add_task(task_name, dataset_name=None, local_path=None,
     if new_task:
         task_model.description = json.load(
             (local_path / 'task-{}_bold.json'.format(task_name)).open())
-        task_model.summary = task_summary,
+        task_model.summary = task_summary
         task_model.TR = task_model.description['RepetitionTime']
         db.session.commit()
 
     stims_processed = {}
     """ Parse every Run """
     print("Parsing runs")
+    '''
     all_runs = layout.get(task=task_name, suffix='bold', extensions='.nii.gz',
                           desc=None, **kwargs)
+    '''
+    # this worked one above didn't
+    all_runs = layout.get(task=task_name, suffix='bold', extensions='.nii.gz')
     for img in progressbar(all_runs):
         """ Extract Run information """
         # Get entities

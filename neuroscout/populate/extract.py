@@ -89,6 +89,8 @@ def extract_features(dataset_name, task_name, extractors):
     """
     cache.clear()
     stims = _load_stim_models(dataset_name, task_name)
+    print(stims)
+    return
 
     results = _extract(extractors, stims)
 

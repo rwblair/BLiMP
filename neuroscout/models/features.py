@@ -1,6 +1,6 @@
 from ..database import db
 import datetime
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import db.JSONB
 
 
 class ExtractedFeature(db.Model):
@@ -9,7 +9,7 @@ class ExtractedFeature(db.Model):
     # Hash of next three variables
     sha1_hash = db.Column(db.Text, nullable=False)
     extractor_name = db.Column(db.String)
-    extractor_parameters = db.Column(JSONB)
+    extractor_parameters = db.Column(db.JSON)
     feature_name = db.Column(db.String)
     original_name = db.Column(db.String)  # Original feature_name
     description = db.Column(db.String)

@@ -106,7 +106,7 @@ interface PredictorsParam {
 export type Parameter = BooleanParam | PredictorsParam;
 
 export type TransformName = 'Scale' | 'Orthogonalize' | 'Sum' | 'Product' | 'Threshold'
-  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Replace';
+  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Replace' | 'Factor';
 
 export type StepLevel = 'Run' | 'Session' | 'Subject' | 'Dataset';
 
@@ -126,6 +126,9 @@ export interface Transformation {
   Above?: boolean;
   Signed?: boolean;
   Replace?: any;
+  Prefix?: string[]; 
+  Constraint?: string;
+  RefLevel?: string;
 }
 
 // Lookup hash of available transformations (as specified in transforms.ts) by their name

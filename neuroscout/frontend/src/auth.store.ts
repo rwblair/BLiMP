@@ -106,7 +106,11 @@ export class AuthStore extends Reflux.Store {
           'Content-type': 'application/json'
         }
       })
-        .then(response => response.json())
+        .then(response => {
+          // tslint:disable-next-line:no-console
+          console.log(response);
+          return response.json();
+        })
         .then((data: { status_code: number; access_token?: string; description?: string }) => {
           if (data.status_code === 401) {
             this.update({ loginError: data.description || '' });
@@ -121,6 +125,8 @@ export class AuthStore extends Reflux.Store {
               }
             })
             .then((response) => {
+              // tslint:disable-next-line:no-console
+              console.log(response);
               if (response.status === 401) {
                 response.json().then((missing_data: {message: string}) => {
                   if (missing_data.message === 'Your account has not been confirmed.') {
@@ -269,6 +275,11 @@ export class AuthStore extends Reflux.Store {
       headers: {
         'Content-type': 'application/json'
       }
+    })
+    .then((response) => {
+      // tslint:disable-next-line:no-console
+      console.log(response);
+      return response;
     })
     .then((response) =>  {
       if (response.ok) {

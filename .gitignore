@@ -121,3 +121,6 @@ nginx/certs
 nginx/certs-data
 
 neuroscout/frontend/src/config.ts
+
+*.bak
+file-data

@@ -1,12 +1,12 @@
 import webargs as wa
 from flask_apispec import MethodResource, marshal_with, use_kwargs, doc
-from ..models import Predictor, PredictorEvent, PredictorRun
+from ..models import Predictor, PredictorCategory, PredictorEvent, PredictorRun
 from ..database import db
 from .utils import first_or_404
 from sqlalchemy import func
 from ..core import cache
 from ..utils.db import dump_pe
-from ..schemas.predictor import PredictorSchema
+from ..schemas.predictor import PredictorSchema, PredictorCategorySchema
 
 
 class PredictorResource(MethodResource):
@@ -14,6 +14,13 @@ class PredictorResource(MethodResource):
     @marshal_with(PredictorSchema)
     def get(self, predictor_id, **kwargs):
         return first_or_404(Predictor.query.filter_by(id=predictor_id))
+
+
+class PredictorCategoryResource(MethodResource):
+    @doc(tags=['predictors'], summary='Get predictor categories by id.')
+    @marshal_with(PredictorCategorySchema(many=True))
+    def get(self, predictor_id, **kwargs):
+        return PredictorCategory.query.filter_by(predictor_id=predictor_id).all()
 
 
 def get_predictors(newest=True, **kwargs):

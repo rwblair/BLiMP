@@ -9,6 +9,12 @@ class ExtractedFeatureSchema(Schema):
     modality = fields.Str()
 
 
+class PredictorCategorySchema(Schema):
+    id = fields.Int()
+    value = fields.Str(description="Predictor category name.")
+    predictor_id = fields.Int()
+
+
 class PredictorSchema(Schema):
     id = fields.Int()
     name = fields.Str(description="Predictor name.")

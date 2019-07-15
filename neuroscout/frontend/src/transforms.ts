@@ -64,6 +64,12 @@ const transformDefinitions: Transformation[] = [
   {
     Name: 'Replace',
     Replace: {}
+  },
+  {
+    Name: 'Factor',
+    Prefix: undefined, 
+    Constraint: undefined,
+    RefLevel: undefined
   }
 
 ];

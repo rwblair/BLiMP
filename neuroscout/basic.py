@@ -5,7 +5,7 @@ import os
 
 
 def create_app():
-    app = Flask(__name__, static_folder='/static')
+    app = Flask(__name__.split('.')[0],  static_folder='frontend/build/static/')
     app.config.from_object(os.environ['APP_SETTINGS'])
     app.config.update(
         FEATURE_DATASTORE=str(app.config['FILE_DIR'] / 'feature-tracking.csv'),
@@ -17,6 +17,5 @@ def create_app():
         ALL_TRANSFORMERS=str(app.config['CONFIG_PATH'] / 'transformers.json'),
         BIBLIOGRAPHY=str(app.config['CONFIG_PATH'] / 'bibliography.json')
     )
-
     db.init_app(app)
     return app

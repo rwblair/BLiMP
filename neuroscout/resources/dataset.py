@@ -29,3 +29,8 @@ class DatasetListResource(MethodResource):
         if kwargs.pop('active_only'):
             query['active'] = True
         return Dataset.query.filter_by(**query).all()
+
+class DatasetIngestResource(MethodResource):
+    @doc(tags=['dataset'], summary='Ingest new dataset.')
+    def post(self, **kwargs):
+        return ''

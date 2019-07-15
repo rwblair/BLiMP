@@ -6,7 +6,7 @@ from .auth import User, Role, roles_users, user_datastore
 from .group import GroupPredictor, GroupPredictorValue
 from .dataset import Dataset
 from .features import ExtractedFeature, ExtractedEvent
-from .predictor import Predictor, PredictorEvent, PredictorRun
+from .predictor import Predictor, PredictorEvent, PredictorRun, PredictorCategory
 from .run import Run, analysis_run
 from .stimulus import Stimulus, RunStimulus
 from .task import Task
@@ -25,6 +25,7 @@ __all__ = [
     'GroupPredictor',
     'GroupPredictorValue',
     'Predictor',
+    'PredictorCategory',
     'PredictorEvent',
     'PredictorRun',
     'Report',

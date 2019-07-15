@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 """ Core Neuroscout App """
-from flask import send_file, render_template, url_for
+import os
+
+from requests import get
+
+from flask import send_file, send_from_directory, render_template, url_for
 from .basic import create_app
 from .models import db
 
 app = create_app()
+print(app.static_folder)
 
 from flask_mail import Mail
 mail = Mail(app)
@@ -12,6 +17,7 @@ mail = Mail(app)
 from flask_caching import Cache
 cache = Cache(config={'CACHE_TYPE': 'filesystem', 'CACHE_DIR': app.config['CACHE_DIR']})
 cache.init_app(app)
+cache.clear()
 
 from flask_jwt import JWT
 from flask_security import Security
@@ -25,7 +31,7 @@ jwt = JWT(app, authenticate, load_user)
 
 # Enable CORS
 from flask_cors import CORS
-cors = CORS(app, resources={r"/api/*": {"origins": "*"},
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}, r"/auth": {"origins": "*"},
                             r"/swagger/": {"origins": "*"}})
 
 # Setup API
@@ -51,6 +57,7 @@ route_factory(
     [
         ('DatasetResource', 'datasets/<int:dataset_id>'),
         ('DatasetListResource', 'datasets'),
+        ('DatasetIngest', 'datasets/inges'),
         ('AnalysisRootResource', 'analyses'),
         ('AnalysisResource', 'analyses/<analysis_id>'),
         ('AnalysisFullResource', 'analyses/<analysis_id>/full'),
@@ -66,6 +73,7 @@ route_factory(
         ('RunResource', 'runs/<int:run_id>'),
         ('PredictorListResource', 'predictors'),
         ('PredictorResource', 'predictors/<int:predictor_id>'),
+        ('PredictorCategoryResource', 'predictor_categories/<int:predictor_id>'),
         ('PredictorEventListResource', 'predictor-events'),
         ('UserRootResource', 'user'),
         ('UserTriggerResetResource', 'user/reset_password'),
@@ -74,7 +82,6 @@ route_factory(
         ('TaskResource', 'tasks/<int:task_id>'),
         ('TaskListResource', 'tasks')
     ])
-
 
 @app.route('/confirm/<token>')
 def confirm(token):
@@ -94,9 +101,22 @@ def confirm(token):
                            invalid=invalid, name=name,
                            action_url=url_for('index', _external=True))
 
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory(app.static_folder, path)
+
+''' proxy doesn't work fully, react dev server requires some static resources
+    that we don't have in our static dirs
+SITE_NAME = 'http://localhost:3000'
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def proxy(path):
+    return get(f'{SITE_NAME}{path}').content
+'''
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def index(path):
-    ''' Serve index '''
-    return send_file("frontend/build/index.html")
+    index_dir, _ = os.path.split(os.path.split(app.static_folder)[0])
+    print(index_dir)
+    return send_from_directory(index_dir, 'index.html')

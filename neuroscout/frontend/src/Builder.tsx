@@ -912,7 +912,7 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
     let runIds = this.state.analysis.runIds;
     jwtFetch(`${domainRoot}/api/predictors?run_id=${runIds}`)
     .then((data: Predictor[]) => {
-      // If there is a statusCode we do not have a list of predictors
+      // If there is a statusCode in response we do not have a list of predictors
       if ((data as any).statusCode === undefined) {
         this.setState({
           predictorsLoad: false

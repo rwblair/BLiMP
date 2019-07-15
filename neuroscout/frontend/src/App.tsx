@@ -21,6 +21,7 @@ import { ApiUser, ApiAnalysis, AppAnalysis, AuthStoreState, Dataset } from './co
 import FAQ from './FAQ';
 import { MainCol, Space } from './HelperComponents';
 import Home from './Home';
+import Ingest from './Ingest';
 import Private from './Private';
 import Public from './Public';
 import { displayError, jwtFetch, timeout } from './utils';
@@ -28,6 +29,7 @@ import { displayError, jwtFetch, timeout } from './utils';
 const FormItem = Form.Item;
 const DOMAINROOT = config.server_url;
 const GOOGLECLIENTID = config.google_client_id;
+const isBlimp = (config.blimp === 'true');
 const { localStorage } = window;
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -577,6 +579,15 @@ class App extends Reflux.Component<any, {}, AppState> {
                        </Link>
                      </Menu.Item>
                    }
+                   {this.state.auth.loggedIn && isBlimp &&
+                     <Menu.Item key="create" style={{float: 'right'}}>
+                       <Link
+                         to={{pathname: '/ingest'}}
+                       >
+                         <Icon type="plus" /> Add Dataset
+                       </Link>
+                     </Menu.Item>
+                   }
 
                 </Menu>
               </MainCol>
@@ -619,6 +630,12 @@ class App extends Reflux.Component<any, {}, AppState> {
                       datasets={this.state.datasets}
                     />}
                 />
+                { isBlimp &&
+                  <Route
+                    path="/ingest"
+                    component={Ingest}
+                  />
+                }
                 <Route
                   exact={true}
                   path="/public/:id"

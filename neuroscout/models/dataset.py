@@ -1,5 +1,5 @@
 from ..database import db
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import db.JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from .stimulus import Stimulus
 
@@ -7,7 +7,7 @@ from .stimulus import Stimulus
 class Dataset(db.Model):
     """ A BIDS dataset """
     id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(JSONB)  # BIDS description
+    description = db.Column(db.JSON)  # BIDS description
     summary = db.Column(db.Text)  # Hand crafted summary
     url = db.Column(db.Text)  # External resource / link
     active = db.Column(db.Boolean, default=True)

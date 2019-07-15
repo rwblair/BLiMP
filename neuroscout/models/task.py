@@ -1,5 +1,5 @@
 from ..database import db
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import db.JSON
 from sqlalchemy.ext.hybrid import hybrid_property
 
 
@@ -10,7 +10,7 @@ class Task(db.Model):
     )
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)  # Default: base path
-    description = db.Column(JSONB)  # BIDS task description
+    description = db.Column(db.JSON)  # BIDS task description
 
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'),
                            nullable=False)

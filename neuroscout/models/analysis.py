@@ -1,4 +1,4 @@
-from sqlalchemy.dialects.postgresql import JSONB
+# from sqlalchemy.dialects.postgresql import db.JSON
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from ..database import db
@@ -23,9 +23,9 @@ class Analysis(db.Model):
     predictions = db.Column(db.Text, default='')
     private = db.Column(db.Boolean, default=True)
 
-    model = db.Column(JSONB, default={})  # BIDS Model
-    data = db.Column(JSONB, default={})  # Additional data (e.g. )
-    filters = db.Column(JSONB)  # List of filters used to select runs
+    model = db.Column(db.JSON, default={})  # BIDS Model
+    data = db.Column(db.JSON, default={})  # Additional data (e.g. )
+    filters = db.Column(db.JSON)  # List of filters used to select runs
 
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modified_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
@@ -103,10 +103,10 @@ class Report(db.Model):
     """" Report generation table"""
     id = db.Column(db.Integer, primary_key=True)
     analysis_id = db.Column(db.Text, db.ForeignKey('analysis.hash_id'))
-    runs = db.Column(JSONB, default=None)
+    runs = db.Column(db.JSON, default=None)
     generated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     task_id = db.Column(db.Text)   # Celery task id
-    result = db.Column(JSONB)  # JSON result from Celery (once finished)
+    result = db.Column(db.JSON)  # JSON result from Celery (once finished)
     traceback = db.Column(db.Text)
 
     status = db.Column(db.Text, default='PENDING')
