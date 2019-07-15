@@ -105,8 +105,8 @@ interface PredictorsParam {
 
 export type Parameter = BooleanParam | PredictorsParam;
 
-export type TransformName = 'Scale' | 'Orthogonalize' | 'Sum' | 'Product' | 'Threshold'
-  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Replace' | 'Factor';
+export type TransformName = 'Scale' | 'Orthogonalize' | 'Threshold'
+  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Factor';
 
 export type StepLevel = 'Run' | 'Session' | 'Subject' | 'Dataset';
 
@@ -187,6 +187,7 @@ export interface Store {
   contrastErrors: string[];
   fillAnalysis: boolean;
   analysis404: boolean;
+  doTooltip: boolean;
 }
 
 export interface ApiRun {
@@ -274,6 +275,7 @@ export interface AuthStoreState {
   openSignup: boolean;
   openReset: boolean;
   openEnterResetToken: boolean;
+  openTour: boolean;
   loginError: string;
   signupError: string;
   resetError: string;
@@ -285,4 +287,14 @@ export interface AuthStoreState {
   nextURL: string | null; // will probably remove this and find a better solution to login redirects
   gAuth: any;
   avatar: string;
+}
+
+export interface AppState {
+  loadAnalyses: () => void;
+  analyses: AppAnalysis[]; // List of analyses belonging to the user
+  publicAnalyses: AppAnalysis[]; // List of public analyses
+  auth: AuthStoreState;
+  datasets: Dataset[];
+  cloneAnalysis: (number) => void;
+  onDelete:  (analysis: AppAnalysis) => void;
 }

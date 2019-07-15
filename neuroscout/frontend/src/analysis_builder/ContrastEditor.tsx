@@ -2,10 +2,10 @@
  ContrastEditor module for adding/editing a contrast (used in the Contrasts tab)
 */
 import * as React from 'react';
-import { Form, Input, InputNumber, Button, Radio, message, Modal } from 'antd';
-import { Analysis, Predictor, Contrast, ContrastTypeEnum } from './coretypes';
+import { Form, Input, InputNumber, Button, Radio, Modal } from 'antd';
+import { Predictor, Contrast, ContrastTypeEnum } from '../coretypes';
 import { PredictorSelector } from './Predictors';
-import { DisplayErrorsInline, Space } from './HelperComponents';
+import { DisplayErrorsInline, Space } from '../HelperComponents';
 
 const FormItem = Form.Item;
 const RadioGroup = Radio.Group;
@@ -21,7 +21,7 @@ export function emptyContrast() {
 }
 
 export function validateContrast(contrast: Contrast): string[] {
-    const { Name, ConditionList, Weights, ContrastType } = contrast;
+    const { Name, ConditionList, Weights } = contrast;
     let errors: string[] = [];
     if (!Name) {
       errors.push('Please specify a name for the contrast');
@@ -76,6 +76,7 @@ export class ContrastEditor extends React.Component<
 
   // Validate and save contrast
   onSave = (): void => {
+    this.props.updateBuilderState('contrastErrors')([] as string[]);
     let errors = validateContrast(this.props.activeContrast);
     if (errors.length > 0) {
       this.props.updateBuilderState('contrastErrors')(errors);
@@ -131,7 +132,6 @@ export class ContrastEditor extends React.Component<
     const { availablePredictors } = this.props;
     return (
       <div>
-        <DisplayErrorsInline errors={this.props.contrastErrors} />
         <Form>
           <FormItem required={true} label={'Name of Contrast:'}>
             <Input
@@ -192,6 +192,8 @@ export class ContrastEditor extends React.Component<
             </RadioGroup>
           </FormItem>
         </Form>
+        <DisplayErrorsInline errors={this.props.contrastErrors} />
+        <Space />
         <Button
           type="primary"
           onClick={this.onSave}

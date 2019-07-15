@@ -2,15 +2,14 @@
  OverviewTab component
 */
 import * as React from 'react';
-import { Col, Collapse, Form, Icon, Input, AutoComplete, Row, Table, Tooltip, Switch, Button } from 'antd';
+import { Col, Collapse, Form, Icon, Input, Row, Table, Tooltip, Button } from 'antd';
 import { ColumnProps, TableRowSelection } from 'antd/lib/table';
 
-const FormItem = Form.Item;
-const InputGroup = Input.Group;
-const Panel = Collapse.Panel;
-
 import { getTasks } from './Builder';
-import { Analysis, Dataset, Run, Task } from './coretypes';
+import { Analysis, Dataset, Run, Task } from '../coretypes';
+
+const FormItem = Form.Item;
+const Panel = Collapse.Panel;
 
 interface OverviewTabProps {
   analysis: Analysis;
@@ -53,7 +52,7 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
     };
 
   applyFilter = (pagination, filters, sorter) => {
-      /* If we have no set filters, but some selected subjects and we change pages then all subjects will 
+      /* If we have no set filters, but some selected subjects and we change pages then all subjects will
        * be selected. To prevent this we return immediatly if no filters are set.
        */
       if (Object.keys(filters).map((y) => filters[y]).filter((z) => z.length > 0).length === 0) {
@@ -167,7 +166,6 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
       datasets,
       availableRuns,
       selectedTaskId,
-      predictorsActive,
     } = this.props;
 
     let availableTasks = getTasks(datasets, analysis.datasetId);
@@ -210,8 +208,8 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
 
       { title: 'Summary', dataIndex: 'summary' },
       {
-        title: '#Runs',
-        dataIndex: 'num_runs',
+        title: 'Subjects (N)',
+        dataIndex: 'n_subjects',
         sorter: (a, b) => a.numRuns - b.numRuns
       }
     ];
@@ -247,7 +245,7 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
     } else {
       runMsg = 'Runs: ' + analysis.runIds.length + '/' + this.props.availableRuns.length + ' selected';
     }
-    // This one almost could live in state set by task selection function, but the first selectedTaskId 
+    // This one almost could live in state set by task selection function, but the first selectedTaskId
     //  is being set in builder, and doesn't trip the selection function in the table.
     let taskMsg = '';
     if (this.props.selectedTaskId && availableTasks) {
@@ -260,11 +258,11 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
     return (
       <div className="builderCol">
         <Form layout="vertical">
-          <FormItem label="Name" required={true}>
+          <FormItem label="Analysis name" required={true}>
             <Row type="flex" justify="space-between">
               <Col xs={24}>
                 <Input
-                  placeholder="Name your analysis"
+                  placeholder="You can change this later"
                   value={analysis.name}
                   onChange={this.updateAnalysisFromEvent('name')}
                   required={true}
@@ -275,27 +273,29 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
           </FormItem>
           <FormItem label="Description">
             <Input.TextArea
-              placeholder="Description of your analysis"
               value={analysis.description}
-              autosize={{ minRows: 2, maxRows: 10 }}
+              autosize={{ minRows: 1, maxRows: 10 }}
               onChange={this.updateAnalysisFromEvent('description')}
             />
           </FormItem>
-          <FormItem label="Predictions">
-            <Input.TextArea
-              placeholder="Enter your preditions about what you expect the results to look like"
-              value={analysis.predictions}
-              autosize={{ minRows: 2, maxRows: 10 }}
-              onChange={this.updateAnalysisFromEvent('predictions')}
-            />
-          </FormItem>
-          <p>Select dataset</p>
+          <FormItem
+            label={
+              <span>
+                Dataset&nbsp;&nbsp;
+                <Tooltip title="Choose from a curated set of openly available, naturalistic datasets.">
+                  <Icon type="info-circle" />
+                </Tooltip>
+              </span>
+            }
+            required={true}
+          >
           <Table
+            className="selectDataset"
             columns={datasetColumns}
             rowKey="id"
             size="small"
             dataSource={datasets.filter((x) => {
-              return x.active === true || x.id === this.props.analysis.datasetId; 
+              return x.active === true || x.id === this.props.analysis.datasetId;
             })}
             rowSelection={datasetRowSelection}
             pagination={(datasets.length > 10) ? {'position': 'bottom'} : false}
@@ -325,12 +325,18 @@ export class OverviewTab extends React.Component<OverviewTabProps, OverviewTabSt
                   onChange={this.applyFilter}
                 />
                 <div>
-                  <Button onClick={this.clearFilters}>Clear Filters</Button>
+                  <Button onClick={this.clearFilters}>Clear Filters</Button>&nbsp;&nbsp;
+                  <Tooltip
+                   title={'You can filter runs using the filter icon in each column,\
+                    and clear the filters using this button'}
+                  >
+                    <Icon type="info-circle" />
+                  </Tooltip>
                 </div>
               </Panel>
             </Collapse>
           </div>}
-          <br />
+          </FormItem>
         </Form>
       </div>
     );

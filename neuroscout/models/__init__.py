@@ -6,7 +6,8 @@ from .auth import User, Role, roles_users, user_datastore
 from .group import GroupPredictor, GroupPredictorValue
 from .dataset import Dataset
 from .features import ExtractedFeature, ExtractedEvent
-from .predictor import Predictor, PredictorEvent, PredictorRun, PredictorCategory
+from .predictor import (Predictor, PredictorCategory, PredictorEvent, PredictorRun,
+                        PredictorCollection)
 from .run import Run, analysis_run
 from .stimulus import Stimulus, RunStimulus
 from .task import Task
@@ -28,6 +29,7 @@ __all__ = [
     'PredictorCategory',
     'PredictorEvent',
     'PredictorRun',
+    'PredictorCollection',
     'Report',
     'NeurovaultCollection',
     'Run',

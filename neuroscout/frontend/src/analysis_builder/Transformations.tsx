@@ -5,7 +5,7 @@ This module comtains the following components:
  - XformEditor: component to add/edit a transformtion
 */
 import * as React from 'react';
-import { 
+import {
   Button,
   Checkbox,
   Col,
@@ -16,28 +16,25 @@ import {
   List,
   Radio,
   Row,
-  Select,
-  Table
+  Select
 } from 'antd';
 import {
   DragDropContext,
   Draggable,
   Droppable,
   DroppableProvided,
-  DraggableLocation,
   DropResult,
   DroppableStateSnapshot, DraggableProvided, DraggableStateSnapshot
 } from 'react-beautiful-dnd';
+
 import {
-  Analysis,
   Predictor,
-  Parameter,
   Transformation,
   TransformName,
   XformRules,
-} from './coretypes';
-import { displayError, moveItem, reorder } from './utils';
-import { DisplayErrorsInline, Space } from './HelperComponents';
+} from '../coretypes';
+import { moveItem, reorder } from '../utils';
+import { DisplayErrorsInline, Space } from '../HelperComponents';
 import { PredictorSelector } from './Predictors';
 import transformDefinitions from './transforms';
 const Option = Select.Option;
@@ -50,10 +47,6 @@ for (const item of transformDefinitions) {
 const FormItem = Form.Item;
 const RadioGroup = Radio.Group;
 
-function weightsRequired(name) {
-  return (['Sum'].indexOf(name) >= 0);
-}
-
 export function validateXform(xform: Transformation) {
   let errors: string[] = [];
   if (!xform.Name) {
@@ -62,54 +55,13 @@ export function validateXform(xform: Transformation) {
   if (xform.Input === undefined || xform.Input.length < 1) {
     errors.push('Please select at least one input for the transformation');
   }
-  if (weightsRequired(xform.Name) && (xform.Weights && xform.Input)) {
-    if (xform.Weights.length !== xform.Input.length) {
-      errors.push('Each weight requires a value');
-    }
-  }
   if ((xform.Name === 'Orthogonalize') && xform.Input !== undefined) {
     if (xform.Other === undefined || xform.Other.length < 1) {
       errors.push('Must orthoganalize with respect to at least one predictor');
     }
   }
-  if (xform.Name === 'Replace') {
-    let keys = Object.keys(xform.Replace);
-    let predecessor;
-    let replacement;
-    if (keys.length > 0) {
-      predecessor = keys[0];
-    }
-    if (predecessor === undefined || predecessor.length < 1) {
-      errors.push('Enter value to be replaced.');
-    }
-  }
-  
-  return errors;
-}
 
-function renderParamItems(xform: Transformation) {
-    let reserved = ['input', 'name', 'output'];
-    let paramItems: any = [];
-    Object.keys(xform).map(key => {
-      if (key === 'weights' && xform && xform.Input) {
-        let weightItems: any = [];
-        xform.Input.map((elem, index) => {
-          if (xform && xform.Weights && xform.Weights[index]) {
-            weightItems.push(<li key={index}>{elem + ': ' + xform.Weights[index]}<br/></li>);
-          }
-        });
-        paramItems.push(
-          <li key={key}>{key + ':'}<br/><ul>{weightItems}</ul></li>
-        );
-      } else if (reserved.includes(key)) {
-        return;
-      } else {
-        paramItems.push(
-          <li key={key}>{key + ': ' + xform[key]}</li>
-        );
-      }
-    });
-    return paramItems;
+  return errors;
 }
 
 interface XformDisplayProps {
@@ -122,7 +74,6 @@ interface XformDisplayProps {
 const XformDisplay = (props: XformDisplayProps) => {
   const { xform, index, onDelete, onEdit } = props;
   const input = xform.Input || [];
-  let paramItems = renderParamItems(xform);
   return (
     <div>
       <div  style={{'float': 'right'}}>
@@ -134,7 +85,7 @@ const XformDisplay = (props: XformDisplayProps) => {
         </Button>
       </div>
       <div>
-        <b>{`${index + 1}: ${xform.Name}`} </b><br/>
+        <b>{`${xform.Name}`} </b><br/>
         {`Inputs: ${input!.join(', ')}`}
       </div>
     </div>
@@ -368,13 +319,10 @@ class XformEditor extends React.Component<XformEditorProps, XformEditorState> {
     // tslint:disable-next-line:no-shadowed-variable
     const { xform, xformRules, availableInputs } = this.props;
     const { name, input } = this.state;
-    const editMode = !!xform;
     const allowedXformNames = Object.keys(xformRules);
     const availableParameters = name ? Object.keys(xformRules[name]) : undefined;
     return (
       <div>
-        <DisplayErrorsInline errors={this.props.xformErrors} />
-
         <Form layout="horizontal">
           <Row type="flex">
             <Col lg={{span: 24}} xs={{span: 24}}>
@@ -424,6 +372,8 @@ class XformEditor extends React.Component<XformEditorProps, XformEditorState> {
                 })}
               <br />
             </div>}
+          <DisplayErrorsInline errors={this.props.xformErrors} />
+          <Space />
           <Button
             type="primary"
             onClick={this.onSave}
@@ -526,7 +476,6 @@ export class XformsTab extends React.Component<XformsTabProps,  XformsTabState> 
   };
 
   getStyle = (index: number): string => {
-    let style: any = {};
     if (index === this.props.activeXformIndex) {
       return 'selectedXform';
     }
@@ -534,7 +483,7 @@ export class XformsTab extends React.Component<XformsTabProps,  XformsTabState> 
   }
 
   render() {
-    const {xforms,  predictors, activeXformIndex, activeXform } = this.props;
+    const { predictors, activeXformIndex, activeXform } = this.props;
     const {mode} = this.state;
     const AddMode = () => (
       <div style={{'marginTop': '-14px'}}>
@@ -575,7 +524,7 @@ export class XformsTab extends React.Component<XformsTabProps,  XformsTabState> 
                     <List.Item className={this.getStyle(index)}>
                       <Draggable key={index} draggableId={'' + index} index={index}>
                         {(providedDraggable: DraggableProvided, snapshotDraggable: DraggableStateSnapshot) => (
-                            <div 
+                            <div
                               style={{'width': '100%'}}
                               ref={providedDraggable.innerRef}
                               {...providedDraggable.dragHandleProps}

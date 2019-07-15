@@ -1,18 +1,19 @@
-from flask_apispec import doc, use_kwargs, MethodResource, marshal_with
-from flask import current_app
-from ...models import Report, NeurovaultCollection
-from ...database import db
-from ...worker import celery_app
-import webargs as wa
-from marshmallow import fields
-from ..utils import owner_required, abort, fetch_analysis
-from ...schemas.analysis import (
-    ReportSchema, AnalysisCompiledSchema, NeurovaultCollectionSchema)
-from ...utils.db import put_record
-
 import datetime
 import tempfile
 from hashids import Hashids
+import webargs as wa
+from flask_apispec import doc, use_kwargs, MethodResource, marshal_with
+from flask import current_app
+from pathlib import Path
+
+from ...models import Report, NeurovaultCollection
+from ...database import db
+from ...worker import celery_app
+from ...schemas.analysis import (
+    ReportSchema, AnalysisCompiledSchema, NeurovaultCollectionSchema)
+from ...utils.db import put_record
+from ..utils import owner_required, abort, fetch_analysis
+from ...api_spec import FileField
 
 
 def _validation_hash(analysis_id):
@@ -58,7 +59,7 @@ class CompileAnalysisResource(MethodResource):
 
 @marshal_with(ReportSchema)
 @use_kwargs({
-    'run_id': wa.fields.DelimitedList(fields.Int(),
+    'run_id': wa.fields.DelimitedList(wa.fields.Int(),
                                       description='Run id(s).'),
     'sampling_rate': wa.fields.Number(description='Sampling rate in Hz'),
     'scale': wa.fields.Boolean(description='Scale columns for plotting'),
@@ -110,15 +111,6 @@ class ReportResource(MethodResource):
         return report
 
 
-# Use current_app
-# file_plugin = MarshmallowPlugin()
-#
-#
-# @file_plugin.map_to_openapi_type('file', None)
-class FileField(wa.fields.Raw):
-    pass
-
-
 @doc(tags=['analysis'])
 class AnalysisUploadResource(MethodResource):
     @doc(summary='Upload fitlins analysis tarball.',
@@ -139,7 +131,8 @@ class AnalysisUploadResource(MethodResource):
 
         with tempfile.NamedTemporaryFile(
           suffix='_{}.tar.gz'.format(analysis.hash_id),
-          dir='/file-data/uploads', delete=False) as f:
+          dir=str(Path(current_app.config['FILE_DATA']) / '/uploads'),
+          delete=False) as f:
             tarball.save(f)
 
         timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H:%M')

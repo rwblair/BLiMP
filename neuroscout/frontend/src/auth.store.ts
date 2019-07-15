@@ -6,7 +6,7 @@ var jwtDecode = require('jwt-decode');
 import { authActions } from './auth.actions';
 import { config } from './config';
 import { AuthStoreState } from './coretypes';
-import { displayError, jwtFetch } from './utils';
+import { displayError } from './utils';
 
 const DOMAINROOT = config.server_url;
 
@@ -36,6 +36,7 @@ export class AuthStore extends Reflux.Store {
     return { auth: {
       jwt: jwt ? jwt : '',
       loggedIn: jwt ? true : false,
+      openTour: false,
       nextURL: null,
       loginError: '',
       signupError: '',
@@ -139,6 +140,9 @@ export class AuthStore extends Reflux.Store {
                 message.success('Logged in.');
                 localStorage.setItem('jwt', token);
                 localStorage.setItem('email', email!);
+                response.json().then((user_data: {first_login: boolean}) => {
+                  this.update({ openTour: user_data.first_login });
+                });
                 resolve(token);
               }
             }).catch(displayError);
@@ -149,7 +153,6 @@ export class AuthStore extends Reflux.Store {
 
   // Log user in
   login = () => {
-    let { email, password, loggedIn, openLogin, nextURL } = this.state;
     return this.authenticate()
       .then((jwt: string) => {
         this.update({
@@ -163,9 +166,21 @@ export class AuthStore extends Reflux.Store {
       }).catch(displayError);
   };
 
+  closeTour = () => {
+    this.update({
+      openTour: false
+    });
+  };
+
+  launchTour = () => {
+    this.update({
+      openTour: true
+    });
+  };
+
   // Sign up for a new account
   signup() {
-    const { name, email, password, openSignup } = this.state.auth;
+    const { name, email, password } = this.state.auth;
     fetch(DOMAINROOT + '/api/user', {
       method: 'post',
       body: JSON.stringify({ email: email, password: password, name: name }),
@@ -229,7 +244,6 @@ export class AuthStore extends Reflux.Store {
 
   // Display modal to resend confirmation link
   accountconfirmError = (jwt): void => {
-    const that = this;
     Modal.confirm({
       title: 'Account is not confirmed!',
       content: 'Your account has not been confirmed. \
