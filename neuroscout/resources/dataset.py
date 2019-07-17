@@ -1,9 +1,13 @@
+import os
+
 from flask_apispec import MethodResource, marshal_with, doc, use_kwargs
 import webargs as wa
-from ..models import Dataset
+
 from ..core import cache
-from .utils import first_or_404
+from ..models import Dataset
 from ..schemas.dataset import DatasetSchema
+from ..populate.ingest import add_all_tasks
+from .utils import first_or_404
 
 
 class DatasetResource(MethodResource):
@@ -32,5 +36,12 @@ class DatasetListResource(MethodResource):
 
 class DatasetIngestResource(MethodResource):
     @doc(tags=['dataset'], summary='Ingest new dataset.')
+    @use_kwargs({'path': wa.fields.Str()})
     def post(self, **kwargs):
-        return ''
+        path = kwargs.pop('path')
+        dataset_ids = []
+        if os.path.lexists(path):
+            dataset_ids = add_all_tasks(path)
+        else:
+            return {'error': 'Path does not exist'}
+        return dataset_ids

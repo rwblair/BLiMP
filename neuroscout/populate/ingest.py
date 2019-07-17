@@ -17,7 +17,7 @@ from .utils import hash_stim
 from ..utils.db import get_or_create
 from ..models import (
     Dataset, Task, Run, Predictor, PredictorEvent, PredictorRun, Stimulus,
-    RunStimulus, GroupPredictor, GroupPredictorValue, PredictorCategory))
+    RunStimulus, GroupPredictor, GroupPredictorValue, PredictorCategory)
 from ..database import db
 from progressbar import progressbar
 from .annotate import PredictorSerializer
@@ -129,6 +129,20 @@ def add_stimulus(stim_hash, dataset_id, parent_id=None, path=None,
         db.session.commit()
 
     return model, new
+
+
+def add_all_tasks(local_path, **kwargs):
+    local_path = Path(local_path)
+
+    assert isfile(str(local_path / 'dataset_description.json'))
+
+    layout = BIDSLayout(str(local_path), derivatives=True)
+    dataset_ids = []
+    for task in layout.get_tasks():
+        print(dir(task))
+        dataset_ids.append(add_task(task, local_path=local_path, **kwargs))
+    return dataset_ids
+
 
 
 def add_task(task_name, dataset_name=None, local_path=None,

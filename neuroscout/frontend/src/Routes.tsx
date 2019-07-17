@@ -6,6 +6,7 @@ import './css/App.css';
 import AnalysisList from './AnalysisList';
 import AnalysisBuilder from './analysis_builder/Builder';
 import { AppState } from './coretypes';
+import { config } from './config';
 import FAQ from './FAQ';
 import { NotFound } from './HelperComponents';
 import Home from './Home';
@@ -94,7 +95,9 @@ export default class Routes extends React.Component<AppState, {}> {
       { isBlimp &&
         <Route
           path="/ingest"
-          component={Ingest}
+          render={props =>
+            <Ingest getDatasets={this.props.getDatasets} />
+          }
         />
       }
       <Route

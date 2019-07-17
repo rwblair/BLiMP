@@ -6,7 +6,7 @@ from .analysis import (AnalysisResource, AnalysisRootResource,
                        AnalysisResourcesResource, ReportResource,
                        AnalysisFillResource, AnalysisUploadResource,
                        BibliographyResource)
-from .dataset import DatasetResource, DatasetListResource
+from .dataset import DatasetResource, DatasetListResource, DatasetIngestResource
 from .predictor import (PredictorListResource, PredictorResource,
                         PredictorCategoryResource,
                         PredictorEventListResource,
@@ -30,6 +30,7 @@ __all__ = [
     'ReportResource',
     'DatasetResource',
     'DatasetListResource',
+    'DatasetIngestResource',
     'PredictorResource',
     'PredictorCategoryResource',
     'PredictorListResource',

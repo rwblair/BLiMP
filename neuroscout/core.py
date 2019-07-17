@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """ Core Neuroscout App """
-<<<<<<< HEAD
 import os
 
 from requests import get
@@ -10,15 +9,8 @@ from .basic import create_app
 from .models import db
 
 app = create_app()
-print(app.static_folder)
 
 from flask_mail import Mail
-mail = Mail(app)
-
-from flask_caching import Cache
-cache = Cache(config={'CACHE_TYPE': 'filesystem', 'CACHE_DIR': app.config['CACHE_DIR']})
-cache.init_app(app)
-cache.clear()
 
 from flask_jwt import JWT
 from flask_security import Security
@@ -50,7 +42,7 @@ route_factory(
     [
         ('DatasetResource', 'datasets/<int:dataset_id>'),
         ('DatasetListResource', 'datasets'),
-        ('DatasetIngest', 'datasets/inges'),
+        ('DatasetIngestResource', 'datasets/ingest'),
         ('AnalysisRootResource', 'analyses'),
         ('AnalysisResource', 'analyses/<analysis_id>'),
         ('AnalysisFullResource', 'analyses/<analysis_id>/full'),

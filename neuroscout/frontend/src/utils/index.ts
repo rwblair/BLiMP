@@ -38,6 +38,7 @@ export const _fetch = (path: string, options?: object) => {
       // Need to figure this response out. openLogin triggers modal to popup,
       // but in next cycle. Keep track of request, and after submit on modal
       // run jwt fetch again?
+
       if (response.status === 401) {
         authActions.update({
           openLogin: true,
@@ -51,6 +52,7 @@ export const _fetch = (path: string, options?: object) => {
         return response.json().then(json => {
           // Always add statusCode to the data object or array returned by response.json()
           // This is problematic if length is ever an attribute of a non array response from api.
+          // Also problematic if response.json() returns and empty string
           let copy: any;
           if ('length' in json) {
             // array

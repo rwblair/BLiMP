@@ -55,6 +55,20 @@ export const api = {
     });
   },
 
+  ingestDataset: (path: string): Promise<any> => {
+    const headers = {
+      method: 'post',
+      body: JSON.stringify({ path: path}),
+      headers: {
+        'Content-type': 'application/json'
+      }
+    };
+    return _fetch(`${domainRoot}/api/datasets/ingest`, headers)
+      .then(response => {
+        return response;
+      });
+  },
+
   // Gets a logged in users own analyses
   getAnalyses: (): Promise<AppAnalysis[]> => {
     return jwtFetch(`${domainRoot}/api/user`)

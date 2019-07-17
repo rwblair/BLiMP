@@ -106,7 +106,7 @@ interface PredictorsParam {
 export type Parameter = BooleanParam | PredictorsParam;
 
 export type TransformName = 'Scale' | 'Orthogonalize' | 'Threshold'
-  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Factor';
+  | 'Or' | 'And' | 'Not' | 'Convolve' | 'Factor' | 'Replace';
 
 export type StepLevel = 'Run' | 'Session' | 'Subject' | 'Dataset';
 
@@ -297,4 +297,5 @@ export interface AppState {
   datasets: Dataset[];
   cloneAnalysis: (number) => void;
   onDelete:  (analysis: AppAnalysis) => void;
+  getDatasets: () => void;
 }
