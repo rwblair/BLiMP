@@ -218,12 +218,8 @@ def add_task(task_name, dataset_name=None, local_path=None,
     stims_processed = {}
     """ Parse every Run """
     print("Parsing runs")
-    '''
-    all_runs = layout.get(task=task_name, suffix='bold', extensions='.nii.gz',
-                          desc=None, **kwargs)
-    '''
-    # this worked one above didn't
-    all_runs = layout.get(task=task_name, suffix='bold', extensions='.nii.gz')
+    all_runs = layout.get(task=task_name, suffix='bold', extension='nii.gz',
+                          scope='raw', **kwargs)
     for img in progressbar(all_runs):
         """ Extract Run information """
         # Get entities
@@ -241,10 +237,10 @@ def add_task(task_name, dataset_name=None, local_path=None,
             entities['run'] = run_number
 
         # Get duration (helps w/ transformations)
-        if img.image is not None:
-            run_model.duration = img.image.shape[3] * \
-             img.image.header.get_zooms()[-1]
-        else:
+        try:
+            niimg = img.get_image()
+            run_model.duration = niimg.shape[3] * niimg.header.get_zooms()[-1]
+        except ValueError:
             run_model.duration = scan_length
 
         # Put back as int
@@ -299,4 +295,3 @@ def add_task(task_name, dataset_name=None, local_path=None,
     print("Adding group predictors")
     add_group_predictors(dataset_model.id, local_path / 'participants.tsv')
 
-    return dataset_model.id

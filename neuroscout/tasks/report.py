@@ -8,6 +8,8 @@ from .viz import plot_design_matrix, plot_corr_matrix, sort_dm
 from .utils import update_record, write_jsons, write_tarball, dump_analysis
 
 
+MIN_CLI_VERSION = '0.3'
+
 def compile(flask_app, hash_id, run_ids=None, build=False):
     """ Compile analysis_id. Validate analysis using pybids and
     writout analysis bundle
@@ -50,6 +52,7 @@ def compile(flask_app, hash_id, run_ids=None, build=False):
         resources['validation_hash'] = Hashids(
             flask_app.config['SECONDARY_HASH_SALT'],
             min_length=10).encode(a_id)
+        resources['version_required'] = MIN_CLI_VERSION
 
         # Write out JSON files to tmp_dir
         bundle_paths += write_jsons([
@@ -89,6 +92,7 @@ def generate_report(flask_app, hash_id, report_id,
         scale (bool): Scale columns in dm plot
     """
     FILE_DATA = Path(flask_app.config['FILE_DIR'])
+    domain = flask_app.config['SERVER_NAME']
 
     try:
         report_object = Report.query.filter_by(id=report_id).one()
@@ -96,8 +100,6 @@ def generate_report(flask_app, hash_id, report_id,
         return {
             'traceback': f'Error loading {report_id} from db /n {str(e)}'
             }
-
-    domain = flask_app.config['SERVER_NAME']
 
     try:
         a_id, analysis, resources, predictor_events, bids_dir = dump_analysis(

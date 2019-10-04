@@ -83,24 +83,6 @@ def test_get_rextracted(auth_client, reextract):
     assert len(decode_json(resp)) == 5
 
 
-def test_get_predictor_data(auth_client, add_task):
-    # List of predictors
-    resp = auth_client.get('/api/predictor-events')
-    assert resp.status_code == 200
-    pe_list = decode_json(resp)
-    assert len(pe_list) == 36
-
-    pe = pe_list[0]
-    # Get PEs only for one run
-    resp = auth_client.get(
-        '/api/predictor-events',
-        params={'predictor_id': pe['predictor_id'], 'run_id': pe['run_id']})
-
-    assert resp.status_code == 200
-    pe_list_filt = decode_json(resp)
-    assert len(pe_list_filt) == 4
-
-
 def test_predictor_create(session,
                           auth_client, add_users, add_task, get_data_path):
     # Mock request to /predictors/create
@@ -127,12 +109,17 @@ def test_predictor_create(session,
     pc.user_id = id_1
     session.commit()
 
+    descriptions = {
+        "trial_type": "new_description"
+    }
+
     # Submit to celery task
-    results = upload_collection(app, filenames, runs, dataset_id, pc.id)
+    results = upload_collection(app, filenames, runs, dataset_id, pc.id,
+                                descriptions)
     assert results['status'] == 'OK'
 
     resp = auth_client.get('/api/predictors/collection',
-                           params={'id': pc.id})
+                           params={'collection_id': pc.id})
     assert resp.status_code == 200
     resp = decode_json(resp)
 
@@ -143,5 +130,10 @@ def test_predictor_create(session,
     # Get predictor from API
     resp = decode_json(auth_client.get('/api/predictors/{}'.format(
         resp['predictors'][0]['id'])))
-    assert resp['source'] == 'upload'
+    assert resp['source'] == 'Collection: new_one'
     assert resp['name'] == 'trial_type'
+    assert resp['description'] == 'new_description'
+
+    # Test user PC route:
+    resp = decode_json(auth_client.get('/api/user/predictors'))
+    assert len(resp) == 3

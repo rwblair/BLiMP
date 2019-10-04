@@ -1,28 +1,33 @@
 import pandas as pd
 from pynv import Client
-import tarfile
 import re
-from tempfile import mkdtemp
 from pathlib import Path
 
-from ..core import cache
 from ..utils.db import get_or_create
 from ..database import db
 from ..models import (
     Predictor, PredictorCollection, PredictorEvent, PredictorRun,
-    NeurovaultCollection)
+    NeurovaultFileUpload)
 
 from .utils import update_record
 
 
-def upload_collection(flask_app, filenames, runs, dataset_id, collection_id):
+def upload_collection(flask_app, filenames, runs, dataset_id, collection_id,
+                      descriptions=None, cache=None):
     """ Create new Predictors from TSV files
     Args:
         filenames list of (str): List of paths to TSVs
         runs list of (int): List of run ids to apply events to
         dataset_id (int): Dataset id.
         collection_id (int): Id of collection object
+        descriptions (dict): Optional descriptions for each column
+        cache (obj): Optional flask cache object
     """
+    if cache is None:
+        from ..core import cache as cache
+    if descriptions is None:
+        descriptions = {}
+
     collection_object = PredictorCollection.query.filter_by(
         id=collection_id).one()
 
@@ -55,19 +60,25 @@ def upload_collection(flask_app, filenames, runs, dataset_id, collection_id):
         raise Exception('Not all columns have "onset" and "duration"')
 
     pe_objects = []
-    for col in common_cols - set(['onset', 'duration']):
-        try:
+    try:
+        for col in common_cols - set(['onset', 'duration']):
             predictor = Predictor(
-                name=col, source='upload', dataset_id=dataset_id)
+                name=col,
+                source=f'Collection: {collection_object.collection_name}',
+                dataset_id=dataset_id,
+                predictor_collection_id=collection_object.id,
+                private=True,
+                description=descriptions.get(col))
             db.session.add(predictor)
             db.session.commit()
 
             for ix, e in enumerate(events):
+                select = e[['onset', 'duration', col]].dropna()
                 for run_id in runs[ix]:
                     # Add PredictorRun
                     pr, _ = get_or_create(
                         PredictorRun, predictor_id=predictor.id, run_id=run_id)
-                    for _, row in e.iterrows():
+                    for _, row in select.iterrows():
                         row = row.to_dict()
                         pe_objects.append(
                             PredictorEvent(
@@ -75,19 +86,19 @@ def upload_collection(flask_app, filenames, runs, dataset_id, collection_id):
                                 run_id=run_id, onset=row['onset'],
                                 duration=row['duration'], value=row[col])
                             )
-
-            db.session.bulk_save_objects(pe_objects)
             collection_object.predictors.append(predictor)
-            db.session.commit()
-        except Exception as e:
-            cache.clear()
-            db.session.rollback()
-            update_record(
-                collection_object,
-                exception=e,
-                traceback=f'Error creating predictors. Failed processing {col}'
-            )
-            raise
+
+        db.session.bulk_save_objects(pe_objects)
+        db.session.commit()
+    except Exception as e:
+        cache.clear()
+        db.session.rollback()
+        update_record(
+            collection_object,
+            exception=e,
+            traceback=f'Error creating predictors. Failed processing {col}'
+        )
+        raise
 
     cache.clear()
     return update_record(
@@ -96,55 +107,50 @@ def upload_collection(flask_app, filenames, runs, dataset_id, collection_id):
     )
 
 
-def upload_neurovault(flask_app, img_tarball, hash_id, upload_id,
-                      timestamp=None, n_subjects=None):
-    """ Upload results to NeuroVault
+MAP_TYPE_CHOICES = {
+    't': 'T',
+    'p': 'P',
+    'effect': 'U',
+    'variance': 'Variance',
+}
+
+
+def upload_neurovault(flask_app, file_id, n_subjects=None):
+    """ Upload image file to NeuroVault
     Args:
-        img_tarball (str): tarball path containg images
-        hash_id (str): Analysis hash_id
-        upload_id (int): NeurovaultCollection object id
-        timestamp (str): Current server timestamp
+        file_id (int): NeurovaultFileUpload object id
         n_subjects (int): Number of subjects in analysis
     """
-    upload_object = NeurovaultCollection.query.filter_by(id=upload_id).one()
-    timestamp = "_" + timestamp if timestamp is not None else ''
     api = Client(access_token=flask_app.config['NEUROVAULT_ACCESS_TOKEN'])
+    file_object = NeurovaultFileUpload.query.filter_by(id=file_id).one()
+    basename = Path(file_object.path).parts[-1]
+
+    contrast_name = re.findall('contrast-(.*)_', str(basename))[0]
+    map_type = re.findall('stat-(.*)_', str(basename))[0]
+    map_type = MAP_TYPE_CHOICES[map_type]
+
+    if file_object.level == 'GROUP':
+        analysis_level = 'G'
+    else:
+        analysis_level = 'S'
+        n_subjects = None
 
     try:
-        # Untar:
-        tmp_dir = Path(mkdtemp())
-        with tarfile.open(img_tarball, mode="r:gz") as tf:
-            tf.extractall(tmp_dir)
+        api.add_image(
+            file_object.collection.collection_id, file_object.path,
+            name=contrast_name,
+            modality="fMRI-BOLD", map_type=map_type,
+            analysis_level=analysis_level, cognitive_paradigm_cogatlas='None',
+            number_of_subjects=n_subjects, is_valid=True)
     except Exception as e:
         update_record(
-            upload_object,
+            file_object,
             exception=e,
-            traceback='Error decompressing image bundle'
-        )
-        raise
-
-    try:
-        collection = api.create_collection(
-            '{}{}'.format(hash_id, timestamp))
-
-        for img_path in tmp_dir.glob('*stat-t_statmap.nii.gz'):
-            contrast_name = re.findall('contrast-(.*)_', str(img_path))[0]
-            api.add_image(
-                collection['id'], img_path, name=contrast_name,
-                modality="fMRI-BOLD", map_type='T',
-                analysis_level='G', cognitive_paradigm_cogatlas='None',
-                number_of_subjects=n_subjects, is_valid=True)
-    except Exception as e:
-        update_record(
-            upload_object,
-            exception=e,
-            traceback='Error uploading, perhaps a \
-                collection with the same name exists?'
+            traceback='Error adding image to collection'
         )
         raise
 
     return update_record(
-        upload_object,
-        collection_id=collection['id'],
+        file_object,
         status='OK'
         )

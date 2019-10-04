@@ -10,6 +10,11 @@ import {
   Tag, Tabs, Row, Button, Modal, Icon, message, Tooltip, Form, Input, Collapse
 } from 'antd';
 import { Prompt } from 'react-router-dom';
+import Reflux from 'reflux';
+
+import { authActions } from '../auth.actions';
+import { AuthStore } from '../auth.store';
+import { api } from '../api';
 import { OverviewTab } from './Overview';
 import { PredictorSelector } from './Predictors';
 import { validateContrast } from './ContrastEditor';
@@ -36,10 +41,9 @@ import {
   TransformName,
   TabName
 } from '../coretypes';
-import { displayError, jwtFetch, timeout } from '../utils';
+import { displayError, jwtFetch, timeout, isDefined } from '../utils';
 import { MainCol, Space } from '../HelperComponents';
 import { config } from '../config';
-import { authActions } from '../auth.actions';
 
 const { TabPane } = Tabs;
 const Panel = Collapse.Panel;
@@ -219,10 +223,11 @@ type BuilderProps = {
   datasets: Dataset[];
 };
 
-export default class AnalysisBuilder extends React.Component<BuilderProps & RouteComponentProps<{}>, Store> {
+export default class AnalysisBuilder extends Reflux.Component<any, BuilderProps & RouteComponentProps<{}>, Store> {
   constructor(props: BuilderProps) {
     super(props);
     this.state = initializeStore();
+    this.store = AuthStore;
     // Load analysis from server if an analysis id is specified in the props
     if (!!props.id) {
       jwtFetch(`${domainRoot}/api/analyses/${props.id}`)
@@ -916,15 +921,32 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
   loadPredictors = () => {
     let analysis = this.state.analysis;
     let runIds = this.state.analysis.runIds;
-    jwtFetch(`${domainRoot}/api/predictors?run_id=${runIds}`)
-    .then((data: Predictor[]) => {
-      // If there is a statusCode in response we do not have a list of predictors
+    api.getPredictors(runIds)
+    .then((data: (Predictor[] | null)) => {
+      if (data === null) {
+        return;
+      }
+      // If there is a statusCode we do not have a list of predictors
       if ((data as any).statusCode === undefined) {
         this.setState({
           predictorsLoad: false
         });
         return;
       }
+
+      // merge predictor collection predictors into available predictors
+      if (this.state.auth && this.state.auth.predictorCollections) {
+        let userPredictors = this.state.auth.predictorCollections.filter(x => {
+          return x.predictors !== undefined &&
+          x.predictors.length > 0 &&
+          x.predictors[0].dataset_id + '' === this.state.analysis.datasetId;
+        }).map(x => x.predictors).filter(isDefined).flat().map(predictor => {
+          if (!data.some((elem => elem.id === predictor.id))) {
+            data.push(predictor);
+          }
+        });
+      }
+
       const selectedPredictors = data.filter(
         p => analysis.predictorIds.indexOf(p.id) > -1
       );
@@ -1050,6 +1072,7 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
       activeTab = 'review';
       this.postTabChange(activeTab);
     }
+
     return (
       <div className="App">
           <Prompt
@@ -1079,19 +1102,23 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                   {this.navButtons(!(!!this.state.analysis.name && this.state.analysis.runIds.length > 0), false)}
                   <br/>
                 </TabPane>}
-                {isEditable && <TabPane
+                {isEditable &&
+                <TabPane
                   tab="Predictors"
                   key="predictors"
                   disabled={(!predictorsActive || !isEditable) && !isFailed}
                 >
                   <h2>Select Predictors&nbsp;&nbsp;
+                  {this.state.activeTab === ('predictors' as TabName) &&
                   <Tooltip
                    title={'Use the search bar to find and select predictors to add to your analysis.\
                    For example, try searching for "face" or "fmriprep"'}
-                   defaultVisible={this.state.doTooltip}
+                   defaultVisible={this.state.doTooltip && this.state.activeTab === ('predictors' as TabName)}
                   >
                     <Icon type="info-circle" style={{ fontSize: '15px'}}/>
-                  </Tooltip></h2>
+                  </Tooltip>
+                  }
+                  </h2>
                   <PredictorSelector
                     availablePredictors={availablePredictors}
                     selectedPredictors={selectedPredictors}
@@ -1108,13 +1135,16 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                   disabled={(!transformationsActive || !isEditable) && !isFailed}
                 >
                   <h2>Add Transformations&nbsp;&nbsp;
+                  {this.state.activeTab === ('transformations' as TabName) &&
                   <Tooltip
                    title={'Add transformations to sequentially modify your predictors \
                    prior to constructing the final design matrix.'}
-                   defaultVisible={this.state.doTooltip}
+                   defaultVisible={this.state.doTooltip && this.state.activeTab === ('transformations' as TabName)}
                   >
                     <Icon type="info-circle" style={{ fontSize: '15px'}}/>
-                  </Tooltip></h2>
+                  </Tooltip>
+                  }
+                  </h2>
                   <XformsTab
                     predictors={selectedPredictors}
                     xforms={analysis.transformations.filter(x => x.Name !== 'Convolve')}
@@ -1130,14 +1160,17 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                 </TabPane>}
                 {isEditable && <TabPane tab="HRF" key="hrf" disabled={(!hrfActive || !isEditable) && !isFailed}>
                   <h2>HRF Convolution&nbsp;&nbsp;
+                  {this.state.activeTab === ('hrf' as TabName) &&
                   <Tooltip
                    title={'Select which variables to convolve with the hemodynamic response function. \
                    To convolve all variables that are not fMRIPrep confounds, \
                    click "Select All Non-Confounds"'}
-                   defaultVisible={this.state.doTooltip}
+                   defaultVisible={this.state.doTooltip && this.state.activeTab === ('hrf' as TabName)}
                   >
                     <Icon type="info-circle" style={{ fontSize: '15px'}}/>
-                  </Tooltip></h2>
+                  </Tooltip>
+                  }
+                  </h2>
                   <PredictorSelector
                     availablePredictors={selectedPredictors}
                     selectedPredictors={selectedHRFPredictors}
@@ -1158,13 +1191,16 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                   disabled={(!contrastsActive || !isEditable) && !isFailed}
                 >
                   <h2>Add Contrasts&nbsp;&nbsp;
+                  {this.state.activeTab === ('contrasts' as TabName) &&
                   <Tooltip
                    title={'Here you can define statistical contrasts to compute from the fitted parameter estimates.\
                    To create identity contrasts [1, 0] for each predictor, use "Generate Automatic Contrasts"'}
-                   defaultVisible={this.state.doTooltip}
+                   defaultVisible={this.state.doTooltip && this.state.activeTab === ('contrasts' as TabName)}
                   >
                     <Icon type="info-circle" style={{ fontSize: '15px'}}/>
-                  </Tooltip></h2>
+                  </Tooltip>
+                  }
+                  </h2>
                   <ContrastsTab
                     analysis={analysis}
                     contrasts={analysis.contrasts}
@@ -1187,6 +1223,7 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                         analysisId={analysis.analysisId}
                         runIds={analysis.runIds}
                         postReports={this.state.postReports}
+                        defaultVisible={this.state.doTooltip && this.state.activeTab === ('review' as TabName)}
                       />
                       <Review
                         model={this.state.model}
@@ -1195,7 +1232,7 @@ export default class AnalysisBuilder extends React.Component<BuilderProps & Rout
                         dataset={this.props.datasets.find((x => x.id === this.state.analysis.datasetId))}
                       />
                       <br/>
-                      {this.navButtons(false, isEditable)}
+                      {isEditable && this.navButtons(false, isEditable)}
                       <br/>
                     </div>
                   }

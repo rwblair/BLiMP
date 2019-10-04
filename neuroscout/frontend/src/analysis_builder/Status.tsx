@@ -187,9 +187,56 @@ export class StatusTab extends React.Component<submitProps, statusTabState> {
     let url = `https://neurovault.org/collections/${collection_id}`;
     return (
       <a href={url} target="_blank">
-        https://neurovault.org/collections/{collection_id}/
+        Collection ID: {collection_id}
       </a>
     );
+  }
+
+  nvStatus(uploads: any) {
+    let statuses = [] as any[];
+    uploads.map(x => {
+      statuses.push(
+        <Card 
+          key={x.id}
+          title={this.nvLink(x.id)}
+          style={{display: 'inline-block'}}
+        >
+          {(x.pending > 0) &&
+            <span>
+            <Alert
+              message={`${x.pending}/{x.total} image uploads pending`}
+              type="warning"
+            />
+            </span>
+          }
+          {(x.ok > 0) &&
+            <Alert
+              message={`${x.ok}/${x.total} image uploads succeeded`}
+              type="success"
+            />
+          }
+          {(x.failed > 0) &&
+            <Tooltip title={(<>{x.tracebacks.map((y, i) => <p key={i}>{y}</p>)}</>)}>
+              <div>
+                <Alert
+                  message={`${x.failed}/${x.total} image uploads failed`}
+                  type="error"
+                />
+              </div>
+            </Tooltip>
+          }
+        </Card>
+      );
+    });
+    if (statuses.length > 0) {
+      return(
+      <>
+        <h3>NeuroVault Uploads</h3>
+        {...statuses}
+      </>
+      );
+    }
+    return(<div />);
   }
 
   render() {
@@ -207,9 +254,10 @@ export class StatusTab extends React.Component<submitProps, statusTabState> {
         <div>
           <h3>Analysis Passed</h3>
           <p>
-            {this.props.userOwns && 'Congratulations!'} The analysis is finished compiling and is ready to be executed.
-            Once you have installed Docker you may run the analysis with the following command,
-            replacing '/local/directory' with a directory on your computer:
+            {this.props.userOwns && 'Congratulations!'} Congratulations, your analysis has been compiled!
+            Run the analysis with this this command, replacing '/local/outputdirectory' with a local directory.
+            See the <a href="https://github.com/neuroscout/neuroscout-cli">neuroscout-cli documentation </a>
+             for more information.
           </p>
           <pre>
             <code>
@@ -217,10 +265,12 @@ export class StatusTab extends React.Component<submitProps, statusTabState> {
               neuroscout/neuroscout-cli run /out {this.props.analysisId}
             </code>
           </pre>
-          <p>
-            See the <a href="https://github.com/neuroscout/neuroscout-cli">neuroscout-cli documentation </a>
-             for more information on how to install and run analyses.
-          </p>
+          <Card size="small" title="System Requirements" style={{ width: 400 }}>
+            <p>OS: Windows/Linux/Mac OS with <a href="https://docs.docker.com/install/">Docker</a></p>
+            <p>RAM: 8GB+ RAM</p>
+            <p>Disk space: 4GB + ~1 GB/subject</p>
+          </Card>
+          <br/>
         </div>
       }
       {(this.props.status === 'FAILED') &&
@@ -251,38 +301,7 @@ export class StatusTab extends React.Component<submitProps, statusTabState> {
           <p>Analysis generation may take some time. This page will update when complete.</p>
         </div>
       }
-      {(this.state.nvUploads) &&
-        <div>
-        <h3>NeuroVault Uploads</h3>
-        {(this.state.nvUploads.pending) &&
-          <Alert
-            message="Latest Attempted Upload:"
-            description={`${this.state.nvUploads.pending.uploaded_at}`}
-            type="warning"
-          />
-        }
-        {(this.state.nvUploads.ok) &&
-          this.state.nvUploads.ok.map((x, i) => {
-            return (<Alert
-              key={x.collection_id}
-              message={this.nvLink(x.collection_id)}
-              description={`Uploaded at: ${x.uploaded_at}`}
-              type="success"
-            />);
-          })
-        }
-        {(this.state.nvUploads.failed) &&
-          <p>
-          <Alert
-            message="Last failed upload:"
-            description={`Failed at ${this.state.nvUploads.failed.uploaded_at}
-              <br/>${this.state.nvUploads.failed.traceback}`}
-            type="error"
-          />
-          </p>
-        }
-        </div>
-      }
+      {this.state.nvUploads && this.nvStatus(this.state.nvUploads)}
       {this.props.children}
       </div>
     );

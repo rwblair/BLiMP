@@ -8,7 +8,7 @@ from flask import send_file, send_from_directory, render_template, url_for
 from .basic import create_app
 from .models import db
 
-app = create_app()
+app, cache = create_app()
 
 from flask_mail import Mail
 
@@ -17,10 +17,6 @@ from flask_security import Security
 from flask_security.confirmable import confirm_email_token_status, confirm_user
 from flask_cors import CORS
 
-from .basic import create_app
-from .models import db, user_datastore
-
-app, cache = create_app()
 mail = Mail(app)
 # Enable CORS
 cors = CORS(
@@ -65,6 +61,7 @@ route_factory(
         ('UserTriggerResetResource', 'user/reset_password'),
         ('UserResetSubmitResource', 'user/submit_token'),
         ('UserResendConfirm', 'user/resend_confirmation'),
+        ('UserPredictorListResource', 'user/predictors'),
         ('TaskResource', 'tasks/<int:task_id>'),
         ('TaskListResource', 'tasks')
     ])

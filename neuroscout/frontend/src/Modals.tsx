@@ -29,11 +29,13 @@ class GoogleLoginBtn extends React.Component<{}, {}> {
         onSuccess={(e) => {
           if (e.hasOwnProperty('accessToken')) {
             authActions.update({
-              email: 'GOOGLE',
+              email: (e as any).profileObj.email,
               password: (e as any).tokenId,
               gAuth: e,
+              isGAuth: true,
               openSignup: false,
-              openLogin: false
+              openLogin: false,
+              avatar: (e as any).profileObj.imageUrl
             });
             authActions.login();
           }
@@ -227,7 +229,7 @@ export class SignupModal extends React.Component<AuthStoreState, {}> {
             <Input
               placeholder="Full name"
               size="large"
-              value={name}
+              value={this.props.name}
               onChange={(e) => authActions.updateFromInput('name', e)}
             />
           </FormItem>

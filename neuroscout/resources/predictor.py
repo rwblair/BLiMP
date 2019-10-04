@@ -1,5 +1,6 @@
 import webargs as wa
 import tempfile
+import json
 from sqlalchemy import func
 from flask_apispec import MethodResource, marshal_with, use_kwargs, doc
 from flask_jwt import current_identity
@@ -30,7 +31,7 @@ class PredictorCategoryResource(MethodResource):
         return PredictorCategory.query.filter_by(predictor_id=predictor_id).all()
 
 
-def get_predictors(newest=True, **kwargs):
+def get_predictors(newest=True, user=None, **kwargs):
     """ Helper function for querying newest predictors """
     if newest:
         predictor_ids = db.session.query(
@@ -44,11 +45,20 @@ def get_predictors(newest=True, **kwargs):
             PredictorRun.run_id.in_(kwargs.pop('run_id')))
 
     query = Predictor.query.filter(Predictor.id.in_(predictor_ids))
+
     for param in kwargs:
         query = query.filter(getattr(Predictor, param).in_(kwargs[param]))
 
+    query = query.filter_by(active=True)
+
+    if user is not None:
+        query = query.filter_by(private=True).join(
+            PredictorCollection).filter_by(user_id=user.id)
+    else:
+        query = query.filter_by(private=False)
+
     # Only display active predictors
-    return query.filter_by(active=True).all()
+    return query.all()
 
 
 class PredictorListResource(MethodResource):
@@ -68,25 +78,6 @@ class PredictorListResource(MethodResource):
     def get(self, **kwargs):
         newest = kwargs.pop('newest')
         return get_predictors(newest=newest, **kwargs)
-
-
-class PredictorEventListResource(MethodResource):
-    @doc(tags=['predictors'], summary='Get events for predictor(s)',)
-    @use_kwargs({
-        'run_id': wa.fields.DelimitedList(
-            wa.fields.Int(),
-            description="Run id(s)"),
-        'predictor_id': wa.fields.DelimitedList(
-            wa.fields.Int(),
-            description="Predictor id(s)"),
-    }, locations=['query'])
-    @cache.cached(60 * 60 * 24 * 300, query_string=True)
-    def get(self, **kwargs):
-        query = PredictorEvent.query
-        for param in kwargs:
-            query = query.filter(
-                getattr(PredictorEvent, param).in_(kwargs[param]))
-        return dump_pe(query)
 
 
 def prepare_upload(collection_name, event_files, runs, dataset_id):
@@ -136,11 +127,17 @@ class PredictorCollectionResource(MethodResource):
             Required columns: onset, duration, any number of columns\
             with values for new Predictors."),
         "runs": wa.fields.List(
-            wa.fields.DelimitedList(wa.fields.Int())),
-        "dataset_id": wa.fields.Int(required=True, description="Dataset id.")
+            wa.fields.DelimitedList(wa.fields.Int()),
+            required=True
+            ),
+        "dataset_id": wa.fields.Int(required=True, description="Dataset id."),
+        "descriptions": wa.fields.Str(description="Column descriptions")
         }, locations=["files", "form"])
     @auth_required
-    def post(self, collection_name, event_files, runs, dataset_id):
+    def post(self, collection_name, event_files, runs, dataset_id,
+             descriptions=None):
+        if descriptions is not None:
+            descriptions = json.loads(descriptions)
         pc, filenames = prepare_upload(
             collection_name, event_files, runs, dataset_id)
 
@@ -149,7 +146,8 @@ class PredictorCollectionResource(MethodResource):
             args=[filenames,
                   runs,
                   dataset_id,
-                  pc.id
+                  pc.id,
+                  descriptions
                   ])
 
         pc.task_id = task.id
@@ -158,8 +156,10 @@ class PredictorCollectionResource(MethodResource):
 
     @doc(summary='Get predictor collection by id.')
     @use_kwargs(
-        {'id': wa.fields.Int(description="Predictor Collection id.")},
+        {'collection_id': wa.fields.Int(description="Predictor Collection id.",
+                                        required=True)},
         locations=['query'])
     @marshal_with(PredictorCollectionSchema)
-    def get(self, id):
-        return first_or_404(PredictorCollection.query.filter_by(id=id))
+    def get(self, collection_id):
+        return first_or_404(
+            PredictorCollection.query.filter_by(id=collection_id))
