@@ -9,7 +9,6 @@ from .analysis import (AnalysisResource, AnalysisRootResource,
 from .dataset import DatasetResource, DatasetListResource, DatasetIngestResource
 from .predictor import (PredictorListResource, PredictorResource,
                         PredictorCategoryResource,
-                        PredictorEventListResource,
                         PredictorCollectionResource, prepare_upload)
 from .run import RunResource, RunListResource
 from .user import (UserRootResource, UserTriggerResetResource,

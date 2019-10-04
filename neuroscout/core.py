@@ -6,7 +6,7 @@ from requests import get
 
 from flask import send_file, send_from_directory, render_template, url_for
 from .basic import create_app
-from .models import db
+from .models import db, user_datastore
 
 app, cache = create_app()
 
@@ -55,7 +55,6 @@ route_factory(
         ('PredictorListResource', 'predictors'),
         ('PredictorResource', 'predictors/<int:predictor_id>'),
         ('PredictorCategoryResource', 'predictor_categories/<int:predictor_id>'),
-        ('PredictorEventListResource', 'predictor-events'),
         ('PredictorCollectionResource', 'predictors/collection'),
         ('UserRootResource', 'user'),
         ('UserTriggerResetResource', 'user/reset_password'),
