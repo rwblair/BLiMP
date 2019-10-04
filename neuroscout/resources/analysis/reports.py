@@ -102,8 +102,9 @@ class ReportResource(MethodResource):
         if candidate.count() == 0:
             abort(404, "Report not found")
 
+        # This max statement was generating a single element tuple in sqlite
         report = candidate.filter_by(
-            generated_at=max(candidate.with_entities('generated_at'))).one()
+            generated_at=max(candidate.with_entities('generated_at'))[0]).one()
 
         if report.generated_at < analysis.modified_at:
             abort(404, "No fresh reports available")
