@@ -61,3 +61,12 @@ class DockerTestConfig(TestingConfig):
 class TravisConfig(TestingConfig):
     SQLALCHEMY_DATABASE_URI = "postgresql://postgres@localhost/travis_ci_test"
     FILE_DIR = Path('./tmp/file-data').absolute()
+
+class LocalConfig(Config):
+    DEBUG=True
+    PROPAGATE_EXCEPTIONS = True
+    SQLITE_PATH = Path(__file__).resolve().parents[2] / 'sqlite.db'
+    SQLALCHEMY_DATABASE_URI = "sqlite:///{}".format(str(SQLITE_PATH))
+    MIGRATIONS_DIR = './sqlite/migrations/migrations'
+    FILE_DIR = Path('./file-data')
+    ENV = 'development'
