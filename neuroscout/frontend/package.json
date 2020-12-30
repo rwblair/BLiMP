@@ -27,7 +27,7 @@
     "reactour": "^1.15.0",
     "reflux": "^6.4.1",
     "styled-components": "^4.0.0",
-    "vega": "5.3.4",
+    "vega": "5.17.3",
     "vega-embed": "^4.0.0",
     "vega-lite": "3.1.0"
   },
